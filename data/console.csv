@@ -1,0 +1,52 @@
+index,console,abrev,North_America,Europe,Japan,Rest_of_World,Global
+1,PlayStation 2 (PS2),PS2,53.65,55.28,23.18,26.59,158.70
+2,Nintendo DS (DS),DS,57.92,51.84,32.99,11.28,154.02
+3,Nintendo Switch (NS),NS,42.95,30.15,27.44,18.45,118.99
+4,Game Boy (GB),GB,43.18,40.05,32.47,2.99,118.69
+5,PlayStation 4 (PS4),PS4,38.20,45.92,9.59,23.33,117.04
+6,PlayStation (PS),PS,40.78,31.09,21.59,9.04,102.49
+7,Nintendo Wii (Wii),Wii,45.51,33.12,12.77,10.23,101.63
+8,PlayStation 3 (PS3),PS3,29.92,30.87,10.47,16.14,87.40
+9,Xbox 360 (X360),X360,47.09,25.08,1.66,11.90,85.73
+10,Game Boy Advance (GBA),GBA,40.39,21.31,16.96,2.85,81.51
+11,PlayStation Portable (PSP),PSP,21.41,24.39,20.01,14.98,80.79
+12,Nintendo 3DS (3DS),3DS,25.47,20.45,24.67,5.35,75.94
+13,Nintendo Entertainment System (NES),NES,33.49,8.30,19.35,0.77,61.91
+14,Xbox One (XOne),XOne,31.60,13.04,0.12,6.53,51.28
+15,Super Nintendo Entertainment System (SNES),SNES,22.88,8.15,17.17,0.90,49.10
+16,Sega Genesis (GEN),GEN,18.50,8.39,3.58,3.59,34.06
+17,Nintendo 64 (N64),N64,20.11,6.35,5.54,0.93,32.93
+18,Atari 2600 (2600),2600,23.54,3.35,2.36,0.75,30.00
+19,PlayStation 5 (PS5),PS5,12.17,9.33,2.24,5.23,28.97
+20,Xbox (XB),XB,15.77,7.17,0.47,1.24,24.65
+21,GameCube (GC),GC,12.55,4.44,4.04,0.71,21.74
+22,Sega Master System (MS),MS,2.00,6.95,2.52,9.37,20.84
+23,Xbox Series X/S (XS),XS,10.89,5.38,0.40,3.95,20.61
+24,PlayStation Vita (PSV),PSV,2.70,3.94,5.73,3.44,15.82
+25,Nintendo Wii U (WiiU),WiiU,6.15,3.27,3.33,0.82,13.56
+26,GameGear (GG),GG,5.40,3.23,1.78,0.21,10.62
+27,TurboGrafx-16 (TG16),TG16,0.75,,7.76,,10.00
+28,Sega Saturn (SAT),SAT,1.83,1.10,5.80,0.53,9.26
+29,Dreamcast (DC),DC,3.90,1.91,2.25,1.07,9.13
+30,Famicom Disk System (FDS),FDS,,,4.40,,4.40
+31,Atari 7800 (7800),7800,3.77,,,,3.77
+32,WonderSwan (WS),WS,,,3.50,,3.50
+33,Intellivision (Int),Int,,,,,3.00
+34,N-Gage (NGage),NGage,,,,,3.00
+35,Sega CD (SCD),SCD,,,0.40,,2.24
+36,3DO Interactive Multiplayer (3DO),3DO,,,,,2.00
+37,ColecoVision (CV),CV,,,,,2.00
+38,Atari Lynx (Lynx),Lynx,,,,,1.00
+39,Atari 5200 (5200),5200,,,,,1.00
+40,CD-i (CDi),CDi,0.40,,,,1.00
+41,Coleco Telstar (CT),CT,1.00,,,,1.00
+42,Neo Geo (NG),NG,,,,,0.98
+43,Sega 32X (S32X),S32X,,,,,0.80
+44,Virtual Boy (VB),VB,,,0.14,,0.77
+45,PC-FX (PCFX),PCFX,,,0.40,,0.40
+46,Fairchild Channel F (FCF),FCF,,,,,0.35
+47,Magnavox Odyssey (Odys),Odys,,,,,0.35
+48,Atari Jaguar (AJ),AJ,,,,,0.25
+49,Amiga CD32 (CD32),CD32,,0.10,,,0.10
+50,Gizmondo (GIZ),GIZ,,,,,0.02
+51,IQue Player (IQue),IQue,,,,0.01,0.01
