@@ -28,7 +28,6 @@ vendas_jogos <- read.csv("data/Video_Games_Sales_as_at_22_Dec_2016.csv")
 # Exibe a estrutura do dataset
 str(vendas_jogos)
 
-
 # Resumo dos dados:
 summary(vendas_jogos)
 
@@ -99,6 +98,10 @@ colnames(vendas_jogos) <- c("Nome",
                             "Desenvolvedora",
                             "Classificacao",
                             "Qtd_Plataformas")
+
+# Plotando as vendas em um histograma
+hist(vendas_jogos$Vendas_Globais, main = "Vendas Globais de Jogos de Videogame", 
+     xlab = "Vendas Globais", ylab = "Frequência", breaks = 150)
 
 # Agoras vamos plotar um gráfico apresentando as vinte maiores Publishers,
 # em volume de vendas
@@ -183,17 +186,17 @@ vendas_consoles <- slice(vendas_consoles, 1:10)
 # E renomear a variável
 vendas_consoles <- rename(vendas_consoles, Plataforma = console)
 
-# Vamos gerar o gráfico de disperção Jogos vs Consoles
+# Vamos gerar o gráfico de dispersão Jogos vs Consoles
 
-#primeiro criamos uma tabela resumo com a quantidade de vendas de 
+# Primeiro criamos uma tabela resumo com a quantidade de vendas de 
 # consoles por plataforma
 vendas_consoles <- aggregate(Global ~ Plataforma, data = vendas_consoles, sum)
 
-#agora uma com a quantidade de vendas de jogos por plataforma
+# Agora uma com a quantidade de vendas de jogos por plataforma
 vendas_jogos_plataforma <- aggregate(Vendas_Globais ~ Plataforma, 
                                      data = vendas_jogos, sum)
 
-#plotando o gráfico de disperção
+# Plotando o gráfico de dispersão
 ggplot(data = merge(vendas_jogos_plataforma, vendas_consoles, 
                     by = "Plataforma")) +
   aes(x = Vendas_Globais, y = Global, label = Plataforma) +
