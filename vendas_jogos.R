@@ -427,8 +427,8 @@ rmse_teste <- sqrt(mean((base_de_teste$Vendas_Agr_Tds_Plat - previsao_teste) ^ 2
 # Exibindo os resultados
 r_quadrado_treino
 r_quadrado_teste
-r_quadrado_treino
-r_quadrado_teste
+rmse_treino
+rmse_teste
 
 # Teste de Multicolinearidade
 ols_vif_tol(regressao_linear_bc_fiq_stepwise)
