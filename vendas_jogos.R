@@ -7,10 +7,12 @@ R.version
 # O "dplyr" também é usado para manipular e filtrar dados, e o "ggplot2" 
 # é para plotagem de gráficos. O "caret" é um pacote de funções auxiliares 
 # de machine learning, e o "caTools" é útil para gerar amostrar e fazer 
-# a separação de bases, por exemplo. E o "kableExtra" serve para criar
-# tabelas
+# a separação de bases, por exemplo."kableExtra" serve para criar
+# tabelas. "ggrepel" para organizar as labels nos gráficos."nortest"
+# para realizar testes de normalidade. E "olsrr" para testar
+# multicolinearidade
 pacotes <- c("tidyverse","caret", "caTools", "car", "stats", 
-             "kableExtra")
+             "kableExtra", "ggrepel", "nortest", "olsrr")
 
 if(sum(as.numeric(!pacotes %in% installed.packages())) != 0){
   instalador <- pacotes[!pacotes %in% installed.packages()]
@@ -23,7 +25,7 @@ if(sum(as.numeric(!pacotes %in% installed.packages())) != 0){
 }
 
 # Carregando o dataset e conhecendo sua estrtutura:
-vendas_jogos <- read.csv("data/Video_Games_Sales_as_at_22_Dec_2016.csv")
+vendas_jogos <- read.csv("data/vgsales.csv")
 
 # Exibe a estrutura do dataset
 str(vendas_jogos)
@@ -35,21 +37,20 @@ summary(vendas_jogos)
 head(vendas_jogos, 10)
 
 # Limpeza da base de dados:
-vendas_jogos <- vendas_jogos[!(vendas_jogos$Year_of_Release=="N/A" 
-                               | vendas_jogos$Year_of_Release=="1985" 
-                               | vendas_jogos$Year_of_Release=="1988" 
-                               | vendas_jogos$Year_of_Release=="1992" 
-                               | vendas_jogos$User_Score=="tbd" 
-                               | vendas_jogos$User_Score=="" 
-                               | vendas_jogos$Critic_Score=="" 
-                               | vendas_jogos$Developer=="" 
-                               | vendas_jogos$Rating==""),]
-
-# Agora vamos tirar os demais dados "n/a"
-vendas_jogos <- na.omit(vendas_jogos)
+vendas_jogos <- vendas_jogos[!(vendas_jogos$Year=="N/A" 
+                               | vendas_jogos$Year>="2017" 
+),]
 
 # Agora, vamos trabalhar os dados já existentes e enriquecer a nossa base:
-# Vamos criar uma váriavel que mostre a quantidade de plataformas para quais
+# Vamos criar uma váriavel que mostre a quantidade total de vendas em todas as 
+# plataformas
+vendas_agr_tds_plat <- setNames(aggregate(vendas_jogos$Global_Sales,
+                                          by = list(vendas_jogos$Name),
+                                          FUN = sum), c("Name",
+                                                        "Vendas_Agr_Tds_Plat"))
+vendas_jogos <- merge(vendas_jogos, vendas_agr_tds_plat, by = "Name")
+
+# Agora vamos criar uma váriavel que mostre a quantidade de plataformas para quais
 # o jogo foi lançado
 qtd_plataformas <- as.data.frame(table(vendas_jogos$Name), 
                                  col.names = c("Name", 
@@ -58,50 +59,77 @@ qtd_plataformas <- data.frame(setNames(qtd_plataformas, c("Name",
                                                           "Qtd_Plataformas")))
 vendas_jogos <- merge(vendas_jogos, qtd_plataformas, by = "Name")
 
-# Corrigindo o tipo das variáveis
+# Corrigindo o tipo das variáveis e alterando o formato da coluna Year
 vendas_jogos$Platform <- as.factor(vendas_jogos$Platform)
-vendas_jogos$Year_of_Release <- as.numeric(vendas_jogos$Year_of_Release)
+vendas_jogos$Year <- 2016 - as.numeric(vendas_jogos$Year)
 vendas_jogos$Genre <- as.factor(vendas_jogos$Genre)
 vendas_jogos$Publisher <- as.factor(vendas_jogos$Publisher)
-vendas_jogos$Developer <- as.factor(vendas_jogos$Developer)
-vendas_jogos$Rating <- as.factor(vendas_jogos$Rating)
-vendas_jogos$User_Score <- as.numeric(vendas_jogos$User_Score)
 
-# Vamos tirar as variáveis desncessárias (as relacionadas as vendas 
-# em partes específicas do mundo)
-vendas_jogos <- select(vendas_jogos,
-                       Name,
-                       Platform,
-                       Year_of_Release,
-                       Genre,
-                       Publisher,
-                       Global_Sales,
-                       Critic_Score,
-                       Critic_Count,
-                       User_Score,
-                       User_Count,
-                       Developer,
-                       Rating,
-                       Qtd_Plataformas)
+# Vamos colocar uma observação por jogo, transpondo as plataformas para
+# colunas. Vamos aproveitar e organizar a plataforma por fabricante
+
+# Criando uma tabela de correspondência plataforma/fabricante
+tab_correspondencia <- data.frame(Platform = c("XB", "X360", "XOne", "PS",
+                                               "PS2", "PS3", "PS4", "PSP",
+                                               "PSV", "3DS", "DS", "GB",
+                                               "GBA", "GC", "N64", "NES",
+                                               "SNES", "Wii", "WiiU", "PC",
+                                               "2600", "3DO", "DC", "GEN",
+                                               "GG", "NG", "PCFX", "SAT", 
+                                               "SCD", "TG16", "WS"),
+                                  Fabricante = c("Microsoft", "Microsoft", 
+                                                 "Microsoft", "Sony", "Sony",
+                                                 "Sony", "Sony", "Sony", "Sony", 
+                                                 "Nintendo", "Nintendo", "Nintendo",
+                                                 "Nintendo", "Nintendo", "Nintendo",
+                                                 "Nintendo", "Nintendo", "Nintendo",
+                                                 "Nintendo", "PC", "Outros", 
+                                                 "Outros", "Outros", "Outros", 
+                                                 "Outros", "Outros", "Outros", 
+                                                 "Outros", "Outros", "Outros", 
+                                                 "Outros"))
+
+# Mergear as tabelas e incluir a variável "Fabricante"
+adiciona_marca_consoles <- merge(vendas_jogos, 
+                                 tab_correspondencia)[,
+                                                      union(names(vendas_jogos),
+                                                            names(tab_correspondencia))]
+
+# Agrupar os dados por jogo e plataforma
+jogos_e_plataformas <- adiciona_marca_consoles %>%
+  group_by(Name, Fabricante) %>%
+  summarize(lancado = TRUE)
+
+# Pivotar a tabela para ter uma coluna por plataforma
+jogos_plat_colunas <- jogos_e_plataformas %>%
+  pivot_wider(names_from = Fabricante, values_from = lancado, values_fill = FALSE)
+
+# Mergear as tabelas
+vendas_jogos <- merge(vendas_jogos, jogos_plat_colunas, by = "Name")
 
 # Renomeando as colunas para o português:
 colnames(vendas_jogos) <- c("Nome",
+                            "Rank",
                             "Plataforma",
-                            "Ano_De_Lancamento",
+                            "Anos_Desde_Lancado",
                             "Genero",
                             "Editora",
+                            "Vendas_AN",
+                            "Vendas_EU",
+                            "Vendas_JP",
+                            "Vendas_Outros",
                             "Vendas_Globais",
-                            "Nota_Criticos",
-                            "Qtd_Criticos",
-                            "Nota_Usuarios",
-                            "Qtd_Usuarios",
-                            "Desenvolvedora",
-                            "Classificacao",
-                            "Qtd_Plataformas")
+                            "Vendas_Agr_Tds_Plat",
+                            "Qtd_Plataformas",
+                            "Sony",
+                            "Microsoft",
+                            "PC",
+                            "Nintendo",
+                            "Outros")
 
 # Plotando as vendas em um histograma
-hist(vendas_jogos$Vendas_Globais, main = "Vendas Globais de Jogos de Videogame", 
-     xlab = "Vendas Globais", ylab = "Frequência", breaks = 150)
+hist(vendas_jogos$Vendas_Agr_Tds_Plat, main = "Vendas Globais de Jogos de Videogame", 
+     xlab = "Vendas Globais", ylab = "Frequência", breaks = 180)
 
 # Agoras vamos plotar um gráfico apresentando as vinte maiores Publishers,
 # em volume de vendas
@@ -119,33 +147,6 @@ ggplot(maiores_publishers, aes(x = reorder(Editora, Vendas_Totais),
        x = "Publisher",
        y = "Vendas Totais (em milhões)") +
   scale_fill_gradient(low = "lightblue", high = "darkblue", guide = "none")
-
-# E veremos também as 20 maiores Desenvolvedoras. A primeira posição é 
-# ocupada pelo Nintendo, com folga.
-maiores_desenvolvedoras <- vendas_jogos %>% 
-  group_by(Desenvolvedora) %>% 
-  summarize(Vendas_Totais = sum(Vendas_Globais)) %>% 
-  arrange(desc(Vendas_Totais)) %>% 
-  slice(1:20)
-
-ggplot(maiores_desenvolvedoras, aes(x = reorder(Desenvolvedora, Vendas_Totais), 
-                                    y = Vendas_Totais, fill = Vendas_Totais)) +
-  geom_bar(stat = "identity") +
-  coord_flip() +
-  labs(title = "20 Maiores Desenvolvedoras em Volume de Vendas",
-       x = "Desenvolvedora",
-       y = "Vendas Totais (em milhões)") +
-  scale_fill_gradient(low = "lightgreen", high = "darkgreen", guide = "none")
-
-#aproveitando os dados que utilizamos para os gráficos anterioes, vamos criar 
-# variáveis binárias que dizem se uma empresa faz parte do top20
-vendas_jogos <- vendas_jogos %>% 
-  mutate(Maiores_Publishers = ifelse(Editora %in% 
-                                       maiores_publishers$Editora, 
-                                       TRUE, FALSE),
-         Maiores_Desenv = ifelse(Desenvolvedora %in% 
-                                   maiores_desenvolvedoras$Desenvolvedora, 
-                                   TRUE, FALSE))
 
 # Agora vamos importar uma segunda base, com as maiores vendas em hardware 
 # (consoles) da história
@@ -174,11 +175,9 @@ for (i in 1:nrow(vendas_consoles)) {
   vendas_consoles$console[i] <- ext_abv_cons(vendas_consoles$console)
 }
 
-# Vamos retirar dos primeiros consoles o NS (Switch) e o GB (GameBoy), 
-# Pois ambos existiram em períodos não-contemplados por nossa base de jogos 
-# (o primeiro veio depois, e o segundo, antes)
-vendas_consoles <- vendas_consoles[!(vendas_consoles$console == "NS"
-                                     | vendas_consoles$console == "GB"),]
+# Vamos retirar dos primeiros consoles o NS (Switch), pois não existia no
+# período contemplado em nossa base (veio depois)
+vendas_consoles <- vendas_consoles[!(vendas_consoles$console == "NS"),]
 
 # Agora vamos separar os dez primeiros
 vendas_consoles <- slice(vendas_consoles, 1:10)
@@ -201,7 +200,7 @@ ggplot(data = merge(vendas_jogos_plataforma, vendas_consoles,
                     by = "Plataforma")) +
   aes(x = Vendas_Globais, y = Global, label = Plataforma) +
   geom_point() +
-  geom_text(vjust = -1) +
+  geom_text_repel() +
   labs(x = "Vendas de jogos", 
        y = "Vendas de consoles", 
        title = "Vendas de jogos vs. Vendas de consoles por plataforma") +
@@ -267,34 +266,42 @@ ggplot(maiores_jogos, aes(x = reorder(Nome, Vendas_Totais),
 
 # Agora vamos criar um novo dataset só com as variáveis que interessam ao
 # modelo
-dataset_modelo <- select(vendas_jogos, Plataforma, Ano_De_Lancamento, 
-                         Genero, Vendas_Globais, Nota_Criticos, Nota_Usuarios,
-                         Classificacao, Qtd_Plataformas, Editora, 
-                         Desenvolvedora)
+
+dataset_modelo <- select(vendas_jogos, Anos_Desde_Lancado, Genero,
+                         Vendas_Agr_Tds_Plat, Qtd_Plataformas, Outros, 
+                         Sony, Microsoft, Nintendo, PC)
+
+# Retirar os registros duplicados
+dataset_modelo <- subset(dataset_modelo, !duplicated(dataset_modelo))
 
 # ***********************************
 # * CRIANDO E ANALISANDO OS MODELOS *
 # ***********************************
 
 # ********* Modelo inicial
-regressao_linear <- lm(Vendas_Globais ~., data = dataset_modelo)
+regressao_linear <- lm(Vendas_Agr_Tds_Plat ~., data = dataset_modelo)
 
 # Resultados
 summary(regressao_linear)
 
+# Teste shapiro-francia, para testar a hipóstese de não-aderência à 
+# normalidade, conforme o gráfico visto no começo. selecionamos 5000 registro,
+# pois é teste é feito com uma amostra máxima de 5000 registros
+sf.test(regressao_linear$residuals[2500:7499])
+
 # ********* Modelo Box-Cox
 
 # Calculando o lambda
-lambda_bc <- powerTransform(dataset_modelo$Vendas_Globais)
+lambda_bc <- powerTransform(dataset_modelo$Vendas_Agr_Tds_Plat)
 
 # Inserindo o lambda de Box-Cox no dataset, para fazer a estimação 
 # do novo modelo
-dataset_modelo$Vendas_Globais_bc <- (((dataset_modelo$Vendas_Globais 
-                                    ^ lambda_bc$lambda) - 1) / 
-                                    lambda_bc$lambda)
+dataset_modelo$Vendas_Agr_Tds_Plat_bc <- (((dataset_modelo$Vendas_Agr_Tds_Plat 
+                                            ^ lambda_bc$lambda) - 1) / 
+                                            lambda_bc$lambda)
 
 # Rodando o modelo com variável dependente transformada por Box-Cox
-regressao_linear_bc <- lm(formula = Vendas_Globais_bc ~ . - Vendas_Globais, 
+regressao_linear_bc <- lm(formula = Vendas_Agr_Tds_Plat_bc ~ . - Vendas_Agr_Tds_Plat, 
                           data = dataset_modelo)
 
 # Resultados
@@ -311,19 +318,19 @@ summary(regressao_linear_bc_stepwise)
 # ********* Modelo Inicial com Procedimento 1,5x FIQ
 
 # Definindo o primeiro e terceiro quartil do dataset
-quartis <- quantile(dataset_modelo$Vendas_Globais, probs=c(.25, .75))
+quartis <- quantile(dataset_modelo$Vendas_Agr_Tds_Plat, probs=c(.25, .75))
 
 # Calculando a Faixa Interquantil
-fiq <- IQR(dataset_modelo$Vendas_Globais)
+fiq <- IQR(dataset_modelo$Vendas_Agr_Tds_Plat)
 
 # Dataset do modelo 1,5x FIQ
-dataset_modelo_fiq <- subset(dataset_modelo, dataset_modelo$Vendas_Globais >
+dataset_modelo_fiq <- subset(dataset_modelo, dataset_modelo$Vendas_Agr_Tds_Plat >
                                (quartis[1] - 1.5*fiq) & 
-                               dataset_modelo$Vendas_Globais < 
+                               dataset_modelo$Vendas_Agr_Tds_Plat < 
                                (quartis[2]+1.5*fiq))
 
 # Rodando o Modelo
-regressao_linear_fiq <- lm(Vendas_Globais ~., data = dataset_modelo_fiq)
+regressao_linear_fiq <- lm(Vendas_Agr_Tds_Plat ~., data = dataset_modelo_fiq)
 
 # Resultados
 summary(regressao_linear_fiq)
@@ -331,17 +338,18 @@ summary(regressao_linear_fiq)
 # ********* Modelo Box-Cox sobre o Modelo 1,5x FIQ
 
 # Calculando o lambda
-lambda_bc_fiq <- powerTransform(dataset_modelo_fiq$Vendas_Globais)
+lambda_bc_fiq <- powerTransform(dataset_modelo_fiq$Vendas_Agr_Tds_Plat)
+dataset_modelo_fiq_bc <- dataset_modelo_fiq
 
 # Inserindo o lambda de Box-Cox no dataset, para fazer a estimação 
 # do novo modelo
-dataset_modelo_fiq$Vendas_Globais_bc_fiq <- (((dataset_modelo_fiq$Vendas_Globais 
-                                               ^ lambda_bc_fiq$lambda) - 1) / 
-                                               lambda_bc_fiq$lambda)
+dataset_modelo_fiq_bc$Vendas_Agr_Tds_Plat <- (((dataset_modelo_fiq$Vendas_Agr_Tds_Plat 
+                                                    ^ lambda_bc_fiq$lambda) - 1) / 
+                                                    lambda_bc_fiq$lambda)
 
 # Rodando o modelo com variável dependente transformada por Box-Cox
-regressao_linear_bc_fiq <- lm(formula = Vendas_Globais_bc_fiq ~ . 
-                              - Vendas_Globais, data = dataset_modelo_fiq)
+regressao_linear_bc_fiq <- lm(formula = Vendas_Agr_Tds_Plat ~ .,
+                              data = dataset_modelo_fiq_bc)
 
 # Resultados
 summary(regressao_linear_bc_fiq)
@@ -360,24 +368,24 @@ tab_resultados <- data.frame(modelo = c("R. Linear", "R. Linear c/ Box-Cox",
                                         "R. Linear 1,5x FIQ",
                                         "R. Linear 1,5x FIQ c/ BC",
                                         "R. Linear 1,5x FIQ c/ BC e SW"),
-                         erro_padrao_residual = c(summary(regressao_linear)$sigma,
-                                                  summary(regressao_linear_bc)$sigma,
-                                                  summary(regressao_linear_bc_stepwise)$sigma,
-                                                  summary(regressao_linear_fiq)$sigma, 
-                                                  summary(regressao_linear_bc_fiq)$sigma, 
-                                                  summary(regressao_linear_bc_fiq_stepwise)$sigma),
-                         r_quadrado_multiplo = c(summary(regressao_linear)$r.squared,
-                                                 summary(regressao_linear_bc)$r.squared,
-                                                 summary(regressao_linear_bc_stepwise)$r.squared,
-                                                 summary(regressao_linear_fiq)$r.squared, 
-                                                 summary(regressao_linear_bc_fiq)$r.squared, 
-                                                 summary(regressao_linear_bc_fiq_stepwise)$r.squared),
-                         estatística_f = c(summary(regressao_linear)$fstatistic[1],
-                                           summary(regressao_linear_bc)$fstatistic[1],
-                                           summary(regressao_linear_bc_stepwise)$fstatistic[1],
-                                           summary(regressao_linear_fiq)$fstatistic[1], 
-                                           summary(regressao_linear_bc_fiq)$fstatistic[1], 
-                                           summary(regressao_linear_bc_fiq_stepwise)$fstatistic[1]))
+                             erro_padrao_residual = c(summary(regressao_linear)$sigma,
+                                                      summary(regressao_linear_bc)$sigma,
+                                                      summary(regressao_linear_bc_stepwise)$sigma,
+                                                      summary(regressao_linear_fiq)$sigma, 
+                                                      summary(regressao_linear_bc_fiq)$sigma, 
+                                                      summary(regressao_linear_bc_fiq_stepwise)$sigma),
+                             r_quadrado_multiplo = c(summary(regressao_linear)$r.squared,
+                                                     summary(regressao_linear_bc)$r.squared,
+                                                     summary(regressao_linear_bc_stepwise)$r.squared,
+                                                     summary(regressao_linear_fiq)$r.squared, 
+                                                     summary(regressao_linear_bc_fiq)$r.squared, 
+                                                     summary(regressao_linear_bc_fiq_stepwise)$r.squared),
+                             estatística_f = c(summary(regressao_linear)$fstatistic[1],
+                                               summary(regressao_linear_bc)$fstatistic[1],
+                                               summary(regressao_linear_bc_stepwise)$fstatistic[1],
+                                               summary(regressao_linear_fiq)$fstatistic[1], 
+                                               summary(regressao_linear_bc_fiq)$fstatistic[1], 
+                                               summary(regressao_linear_bc_fiq_stepwise)$fstatistic[1]))
 
 # Exibindo a tabela de resultados
 tab_resultados %>%
@@ -385,3 +393,42 @@ tab_resultados %>%
   kable_styling(bootstrap_options = "striped", 
                 full_width = F, 
                 font_size = 16)
+
+# ***********************************
+# * CRIANDO E ANALISANDO OS MODELOS *
+# ***********************************
+
+# Testando se há overfitting
+
+# Gerando amostra e splitando a base
+set.seed(555)
+amostra <- createDataPartition(dataset_modelo_fiq_bc$Vendas_Agr_Tds_Plat, p = 0.7, list = FALSE)
+base_de_treino <- dataset_modelo_fiq_bc[amostra, ]
+base_de_teste <- dataset_modelo_fiq_bc[-amostra, ]
+
+# Rodando a regressão na base de treino
+regressao_treino <- lm(Vendas_Agr_Tds_Plat ~ ., data = base_de_treino)
+regressao_treino_stepwise <- step(regressao_treino, k = 3.841459)
+
+# Rodando as previsões
+previsao_treino <- predict(regressao_treino_stepwise, newdata = base_de_treino)
+previsao_teste <- predict(regressao_treino_stepwise, newdata = base_de_teste)
+
+# Calculando os resultados
+
+# Calculo do r-quadrado
+r_quadrado_treino <- summary(regressao_treino_stepwise)$r.squared
+r_quadrado_teste <- cor(base_de_teste$Vendas_Agr_Tds_Plat, previsao_teste) ^ 2
+
+# Calculo do rmse
+rmse_treino <- sqrt(mean((base_de_treino$Vendas_Agr_Tds_Plat - previsao_treino) ^ 2))
+rmse_teste <- sqrt(mean((base_de_teste$Vendas_Agr_Tds_Plat - previsao_teste) ^ 2))
+
+# Exibindo os resultados
+r_quadrado_treino
+r_quadrado_teste
+r_quadrado_treino
+r_quadrado_teste
+
+# Teste de Multicolinearidade
+ols_vif_tol(regressao_linear_bc_fiq_stepwise)
