@@ -394,9 +394,9 @@ tab_resultados %>%
                 full_width = F, 
                 font_size = 16)
 
-# ***********************************
-# * CRIANDO E ANALISANDO OS MODELOS *
-# ***********************************
+# ***********************
+# * TESTANDO OS MODELOS *
+# ***********************
 
 # Testando se há overfitting
 
