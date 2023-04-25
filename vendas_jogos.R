@@ -325,12 +325,13 @@ fiq <- IQR(dataset_modelo$Vendas_Agr_Tds_Plat)
 
 # Dataset do modelo 1,5x FIQ
 dataset_modelo_fiq <- subset(dataset_modelo, dataset_modelo$Vendas_Agr_Tds_Plat >
-                               (quartis[1] - 1.5*fiq) & 
+                               (quartis[1] - 1.5 * fiq) & 
                                dataset_modelo$Vendas_Agr_Tds_Plat < 
-                               (quartis[2]+1.5*fiq))
+                               (quartis[2] + 1.5 * fiq))
 
 # Rodando o Modelo
-regressao_linear_fiq <- lm(Vendas_Agr_Tds_Plat ~., data = dataset_modelo_fiq)
+regressao_linear_fiq <- lm(Vendas_Agr_Tds_Plat ~. - Vendas_Agr_Tds_Plat_bc,
+                           data = dataset_modelo_fiq)
 
 # Resultados
 summary(regressao_linear_fiq)
@@ -343,12 +344,13 @@ dataset_modelo_fiq_bc <- dataset_modelo_fiq
 
 # Inserindo o lambda de Box-Cox no dataset, para fazer a estimação 
 # do novo modelo
-dataset_modelo_fiq_bc$Vendas_Agr_Tds_Plat <- (((dataset_modelo_fiq$Vendas_Agr_Tds_Plat 
+dataset_modelo_fiq_bc$Vendas_Agr_Tds_Plat <- (((dataset_modelo_fiq_bc$Vendas_Agr_Tds_Plat 
                                                     ^ lambda_bc_fiq$lambda) - 1) / 
                                                     lambda_bc_fiq$lambda)
 
 # Rodando o modelo com variável dependente transformada por Box-Cox
-regressao_linear_bc_fiq <- lm(formula = Vendas_Agr_Tds_Plat ~ .,
+regressao_linear_bc_fiq <- lm(formula = Vendas_Agr_Tds_Plat ~ .
+                              - Vendas_Agr_Tds_Plat_bc,
                               data = dataset_modelo_fiq_bc)
 
 # Resultados
@@ -394,9 +396,9 @@ tab_resultados %>%
                 full_width = F, 
                 font_size = 16)
 
-# ***********************************
-# * CRIANDO E ANALISANDO OS MODELOS *
-# ***********************************
+# ***********************
+# * TESTANDO OS MODELOS *
+# ***********************
 
 # Testando se há overfitting
 
@@ -407,7 +409,9 @@ base_de_treino <- dataset_modelo_fiq_bc[amostra, ]
 base_de_teste <- dataset_modelo_fiq_bc[-amostra, ]
 
 # Rodando a regressão na base de treino
-regressao_treino <- lm(Vendas_Agr_Tds_Plat ~ ., data = base_de_treino)
+regressao_treino <- lm(Vendas_Agr_Tds_Plat ~ .
+                       - Vendas_Agr_Tds_Plat_bc,
+                       data = base_de_treino)
 regressao_treino_stepwise <- step(regressao_treino, k = 3.841459)
 
 # Rodando as previsões
@@ -427,8 +431,8 @@ rmse_teste <- sqrt(mean((base_de_teste$Vendas_Agr_Tds_Plat - previsao_teste) ^ 2
 # Exibindo os resultados
 r_quadrado_treino
 r_quadrado_teste
-r_quadrado_treino
-r_quadrado_teste
+rmse_treino
+rmse_teste
 
 # Teste de Multicolinearidade
 ols_vif_tol(regressao_linear_bc_fiq_stepwise)
