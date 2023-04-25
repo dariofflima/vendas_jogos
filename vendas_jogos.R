@@ -290,19 +290,20 @@ summary(regressao_linear)
 sf.test(regressao_linear$residuals[2500:7499])
 
 # ********* Modelo Box-Cox
+dataset_modelo_bc <- dataset_modelo
 
 # Calculando o lambda
-lambda_bc <- powerTransform(dataset_modelo$Vendas_Agr_Tds_Plat)
+lambda_bc <- powerTransform(dataset_modelo_bc$Vendas_Agr_Tds_Plat)
 
 # Inserindo o lambda de Box-Cox no dataset, para fazer a estimação 
 # do novo modelo
-dataset_modelo$Vendas_Agr_Tds_Plat_bc <- (((dataset_modelo$Vendas_Agr_Tds_Plat 
+dataset_modelo_bc$Vendas_Agr_Tds_Plat <- (((dataset_modelo_bc$Vendas_Agr_Tds_Plat 
                                             ^ lambda_bc$lambda) - 1) / 
                                             lambda_bc$lambda)
 
 # Rodando o modelo com variável dependente transformada por Box-Cox
-regressao_linear_bc <- lm(formula = Vendas_Agr_Tds_Plat_bc ~ . - Vendas_Agr_Tds_Plat, 
-                          data = dataset_modelo)
+regressao_linear_bc <- lm(formula = Vendas_Agr_Tds_Plat ~ ., 
+                          data = dataset_modelo_bc)
 
 # Resultados
 summary(regressao_linear_bc)
@@ -330,27 +331,26 @@ dataset_modelo_fiq <- subset(dataset_modelo, dataset_modelo$Vendas_Agr_Tds_Plat 
                                (quartis[2] + 1.5 * fiq))
 
 # Rodando o Modelo
-regressao_linear_fiq <- lm(Vendas_Agr_Tds_Plat ~. - Vendas_Agr_Tds_Plat_bc,
+regressao_linear_fiq <- lm(Vendas_Agr_Tds_Plat ~.,
                            data = dataset_modelo_fiq)
 
 # Resultados
 summary(regressao_linear_fiq)
 
 # ********* Modelo Box-Cox sobre o Modelo 1,5x FIQ
+dataset_modelo_fiq_bc <- dataset_modelo_fiq
 
 # Calculando o lambda
-lambda_bc_fiq <- powerTransform(dataset_modelo_fiq$Vendas_Agr_Tds_Plat)
-dataset_modelo_fiq_bc <- dataset_modelo_fiq
+lambda_bc_fiq <- powerTransform(dataset_modelo_fiq_bc$Vendas_Agr_Tds_Plat)
 
 # Inserindo o lambda de Box-Cox no dataset, para fazer a estimação 
 # do novo modelo
 dataset_modelo_fiq_bc$Vendas_Agr_Tds_Plat <- (((dataset_modelo_fiq_bc$Vendas_Agr_Tds_Plat 
-                                                    ^ lambda_bc_fiq$lambda) - 1) / 
-                                                    lambda_bc_fiq$lambda)
+                                                ^ lambda_bc_fiq$lambda) - 1) / 
+                                                lambda_bc_fiq$lambda)
 
 # Rodando o modelo com variável dependente transformada por Box-Cox
-regressao_linear_bc_fiq <- lm(formula = Vendas_Agr_Tds_Plat ~ .
-                              - Vendas_Agr_Tds_Plat_bc,
+regressao_linear_bc_fiq <- lm(formula = Vendas_Agr_Tds_Plat ~ .,
                               data = dataset_modelo_fiq_bc)
 
 # Resultados
@@ -409,8 +409,7 @@ base_de_treino <- dataset_modelo_fiq_bc[amostra, ]
 base_de_teste <- dataset_modelo_fiq_bc[-amostra, ]
 
 # Rodando a regressão na base de treino
-regressao_treino <- lm(Vendas_Agr_Tds_Plat ~ .
-                       - Vendas_Agr_Tds_Plat_bc,
+regressao_treino <- lm(Vendas_Agr_Tds_Plat ~ .,
                        data = base_de_treino)
 regressao_treino_stepwise <- step(regressao_treino, k = 3.841459)
 
@@ -436,3 +435,6 @@ rmse_teste
 
 # Teste de Multicolinearidade
 ols_vif_tol(regressao_linear_bc_fiq_stepwise)
+
+# Teste de Homocedasticidade de Breusch-Pagan
+ols_test_breusch_pagan(regressao_linear_bc_fiq_stepwise)
